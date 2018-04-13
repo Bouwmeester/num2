@@ -53,13 +53,14 @@ public class ServerThread extends Thread {
                 // convert byte[] buf to char
 
                 String msg = new String(buf, "UTF-8").trim();
+                String[] parts = msg.split(" ");
                 //System.out.println(buf);
                 //System.out.println("Byte to chars '" + msg + "'");
                 //System.out.println("Test '" + Protocol.Client.LIST + "'");
 
                 // Check if input message is LIST
                 // Return list of available documents
-                if (msg.equals(Protocol.Client.LIST)) {
+                if (parts[0].equals(Protocol.Client.LIST)) {
                     List<String> fileList = new ArrayList<String>();
                     File folder = new File("/home/pi/myDoc");
                     //File folder = new File(" home/Documents/NedapUniversity");
@@ -80,6 +81,22 @@ public class ServerThread extends Thread {
                     socket.send(listPacket);
                     // see output on server
                     System.out.println("List of available documents " + fileList);
+
+                  // download specific file
+                } else if (parts[0].equals(Protocol.Client.DOWNLOAD)) {
+                    String fileName = parts[1];
+                    in = new BufferedReader(new FileReader("/home/pi/myDoc/fileName"));
+                    //in = new BufferedReader(new FileReader("/home/pi/myDoc/fileName"));
+                    String fileInfo = " ";
+                    fileInfo = getNextQuote();
+                    buf = fileInfo.getBytes();
+                    InetAddress address = packet.getAddress();
+                    DatagramPacket filePacket = new DatagramPacket(buf, buf.length, address, port);
+                    socket.send(filePacket);
+
+
+
+
                 } else {
                     System.out.println("List not found");
                 }

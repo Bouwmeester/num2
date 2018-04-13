@@ -29,15 +29,16 @@ public class Client {
         //socket.send(packet);
 
         // get a response
-        // get a response
         boolean keepGoing = true;
         String received = " ";
         socket.setSoTimeout(10);
 
-        while (keepGoing) {
+        // keeps waiting for response of client before sending new packet
+
+       while (keepGoing) {
 
             try {
-                // gebruiker om invoer vragen
+                // Get user input, LIST
                 System.out.println("Please enter LIST, to get a list of documents ");
                 BufferedReader clientInput = new BufferedReader(new InputStreamReader(System.in));
                 String listInput = " ";
@@ -45,7 +46,7 @@ public class Client {
                 try {
                     listInput = clientInput.readLine();
                     sendPacket.setData(listInput.getBytes());
-                    System.out.println(listInput);
+                    //System.out.println(listInput);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
