@@ -3,80 +3,110 @@ package client;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketTimeoutException;
+import java.net.*;
 
 
-public class Client {
+public class Client extends Thread {
 
-    public static void main(String[] args) throws IOException {
-//
-//        if (args.length != 1) {
-//            System.out.println("Usage: java Client ieh");
-//            return;
-//        }
+    private DatagramSocket socket = new DatagramSocket();
+    protected int port = 5454 ;
 
-        // get a datagram socket
-        DatagramSocket socket = new DatagramSocket();
+    public Client() throws IOException {
+        socket = new DatagramSocket(port);
+    }
 
-        // send request
-        byte[] buf = new byte[256];
-        InetAddress address = InetAddress.getByName("192.168.1.1");
-        //InetAddress address = InetAddress.getByName("localhost");
-        DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, 5454);
-        //socket.send(packet);
 
-        // get a response
-        boolean keepGoing = true;
-        String received = " ";
-        socket.setSoTimeout(10);
 
-        // keeps waiting for response of client before sending new packet
+    public void run() {
+        boolean sending = true;
 
-       while (keepGoing) {
-
+        while(sending) {
+            //sending to server
+            System.out.println("Please enter LIST, to get a list of documents and DOWNLOAD-(documentname.txt) to Download ");
             try {
-                // Get user input, LIST
-                System.out.println("Please enter LIST, to get a list of documents ");
                 BufferedReader clientInput = new BufferedReader(new InputStreamReader(System.in));
-                String listInput = " ";
+                String listInput = new String (clientInput.readLine());
 
-                try {
-                    listInput = clientInput.readLine();
-                    sendPacket.setData(listInput.getBytes());
-                    //System.out.println(listInput);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
+                //DatagramSocket socket = new DatagramSocket();
+                byte[] buf = new byte[256];
+                InetAddress address = InetAddress.getByName("192.168.1.1");
+                //InetAddress address = InetAddress.getByName("localhost");
+                DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, port);
+                sendPacket.setData(listInput.getBytes());
                 socket.send(sendPacket);
-                DatagramPacket receivedPacket = new DatagramPacket(buf, buf.length);
-                socket.receive(receivedPacket);
-                //String recv = new String (receivedPacket.getData());
-
-                //display response
-                received = new String(receivedPacket.getData(), 0, receivedPacket.getLength());
-                System.out.println(" Received " + received);
-
-//                if (recv == null || recv.length() == 0){
-//                    keepGoing = false;
-//                } else {
-//                    received = received + recv;
-//                }
-            } catch (SocketTimeoutException ste) {
-                if (received.length() > 0) {
-                    //System.out.println(" Received " + received);
-                } else {
-                    System.out.println(" Error: Connection time out");
-                }
+                System.out.println("Listinput " + listInput);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            //System.out.println(" Received " + received);
+
         }
 
-        socket.close();
+
     }
-}
+
+    public void listen () {
+        //receiving from server
+        boolean receiving = true;
+        int receivedPackets = 0;
+
+        while (receiving) {
+            System.out.println("Receving...");
+            try {
+                //DatagramSocket socket = new DatagramSocket();
+                byte[] buf = new byte[256];
+                DatagramPacket receivedPacket = new DatagramPacket(buf, buf.length);
+                socket.receive(receivedPacket);
+                //System.out.println("Receive packet created ");
+
+                if (receivedPacket != null) {
+                    receivedPackets = receivedPackets + 1;
+                    String received = new String(receivedPacket.getData(), 0, receivedPacket.getLength());
+                    System.out.println(" Received " + received);
+                    System.out.println("Number of packets received  " + receivedPackets);
+
+                } else {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        receiving = false;
+                    }
+                }
+
+            } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        //          2 threads
+        //         wat wil je doen
+//                // stuur naar server
+//                // vanuit gaan dat je antwoord krijgt, tot laatste
+//                // terug naar het begin
+
+
+
+        Client client = new Client();
+        //runs run method, sending
+        client.start();
+
+        // receive input
+        client.listen();
+
+
+
+
+
+
+
+    }
+
+
+    }
+
 

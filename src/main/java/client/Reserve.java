@@ -105,4 +105,127 @@
 //            }
 
 
+//print geen output meer dus iets meer send receive gaat fout
+
+// get a datagram socket
+//        DatagramSocket socket = new DatagramSocket();
+//
+//                // send request
+//                byte[] buf = new byte[256];
+//                InetAddress address = InetAddress.getByName("192.168.1.1");
+//                //InetAddress address = InetAddress.getByName("localhost");
+//                DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, 5454);
+//                //socket.send(packet);
+//
+//                // get a response
+//                boolean keepGoing = true;
+//                String received = " ";
+//                socket.setSoTimeout(10);
+//
+//                // keeps waiting for response of client before sending new packet
+//
+//                // new
+//                byte[] fileContents = new byte[256];
+//
+//                while (keepGoing) {
+//                // wat wil je doen
+//                // stuur naar server
+//                // vanuit gaan dat je antwoord krijgt, tot laatste
+//                // terug naar het begin
+//
+//                try //nieuwe thread  {
+//                //                    System.out.println("Please enter LIST, to get a list of documents ");
+////                    BufferedReader clientInput = new BufferedReader(new InputStreamReader(System.in));
+//                //altijd luisteren op invoer tot laatste packet (terug naar begin)
+//                }
+//
+//                try {
+//                DatagramPacket receivedPacket = new DatagramPacket(buf, buf.length);
+//                socket.receive(receivedPacket);
+//
+//                int numberOfPacketsReceived = 0;
+//
+//                if (receivedPacket != null) {
+//                numberOfPacketsReceived = numberOfPacketsReceived + 1;
+//                System.out.println("Received packet," + receivedPacket.getLength());
+//                System.out.println("Sendpacket" + sendPacket);
+//                socket.send(sendPacket);
+//
+//                //display response
+//                received = new String(receivedPacket.getData(), 0, receivedPacket.getLength());
+//                System.out.println(" Received " + received);
+//
+//                System.out.println("Number of packets received " + numberOfPacketsReceived);
+//                } else {
+//                try {
+//                Thread.sleep(10);
+//                } catch (InterruptedException e) {
+//                e.printStackTrace();
+//                keepGoing = false;
+//                }
+//                }
+//
+//                //          try {
+//
+//                // Packet wordt niet meer goed verstuurd
+//                //String listInput = " ";
+//
+////                try {
+////                    System.out.println("Please enter LIST, to get a list of documents ");
+////                    BufferedReader clientInput = new BufferedReader(new InputStreamReader(System.in));
+////                    listInput = clientInput.readLine();
+////                    sendPacket.setData(listInput.getBytes());
+////                    //System.out.println(listInput);
+////                } catch (IOException e) {
+////                    e.printStackTrace();
+////                }
+////
+////                int numberOfPacketsReceived = 0;
+////                //byte[] storedPackets = new byte[];
+////                //byte[] fileContents = new byte[];
+////
+////                DatagramPacket receivedPacket = new DatagramPacket(buf, buf.length);
+////                socket.receive(receivedPacket);
+//
+//
+//
+////                //Old
+////                // Get user input, LIST
+////                System.out.println("Please enter LIST, to get a list of documents ");
+////                BufferedReader clientInput = new BufferedReader(new InputStreamReader(System.in));
+////                String listInput = " ";
+////
+////                try {
+////                    listInput = clientInput.readLine();
+////                    sendPacket.setData(listInput.getBytes());
+////                    //System.out.println(listInput);
+////                } catch (IOException e) {
+////                    e.printStackTrace();
+////                }
+//
+//
+////                socket.send(sendPacket);
+////                DatagramPacket receivedPacket = new DatagramPacket(buf, buf.length);
+////                socket.receive(receivedPacket);
+//                //String recv = new String (receivedPacket.getData());
+//
+//                //display response
+////                received = new String(receivedPacket.getData(), 0, receivedPacket.getLength());
+////                System.out.println(" Received " + received);
+//
+//
+//
+//                } catch (SocketTimeoutException ste) {
+//                if (received.length() > 0) {
+//                //System.out.println(" Received " + received);
+//                } else {
+//                System.out.println(" Error: Connection time out");
+//                }
+//                }
+//                //System.out.println(" Received " + received);
+//                }
+//
+//                socket.close();
+//                }
+//                }
 //}

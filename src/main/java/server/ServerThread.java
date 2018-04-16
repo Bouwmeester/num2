@@ -7,7 +7,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Arrays;
 import java.util.List;
 
 public class ServerThread extends Thread {
@@ -16,8 +16,6 @@ public class ServerThread extends Thread {
     protected BufferedReader in = null;
     protected boolean moreLines = true;
     protected int port = 5454;
-
-    //test test test 
 
 
     public ServerThread() throws IOException {
@@ -28,16 +26,6 @@ public class ServerThread extends Thread {
     public ServerThread(String name) throws IOException {
         super(name);
         socket = new DatagramSocket(port);
-        //System.out.println("Working Directory = " +
-               // System.getProperty("user.dir"));
-        try {
-            in = new BufferedReader(new FileReader("/home/pi/myDoc/freestyler.txt"));
-            //in = new BufferedReader(new FileReader("/home/pi/myDoc/textFile.txt"));
-            //in = new BufferedReader(new FileReader("textFile.txt"));
-        } catch (FileNotFoundException e) {
-            System.err.println(" Couldn't find file");
-        }
-
     }
 
     public void run() {
@@ -49,6 +37,7 @@ public class ServerThread extends Thread {
                 //receive packet
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
+                System.out.println("Receiving input");
 
                 // receive packet --> LIST
                 // convert byte[] buf to char
@@ -64,9 +53,9 @@ public class ServerThread extends Thread {
                 if (parts[0].equals(Protocol.Client.LIST)) {
                     List<String> fileList = new ArrayList<String>();
                     File folder = new File("/home/pi/myDoc");
-                    //File folder = new File(" home/Documents/NedapUniversity");
+                    //File folder = new File(" /home/Documents/NedapUniversity/RaspPi");
                     File[] listOfFiles = folder.listFiles();
-                    //System.out.println(listOfFiles + "list of files");
+                    System.out.println(listOfFiles + "list of files");
                     for (File file : listOfFiles) {
                         if (file.isFile()) {
                             fileList.add(file.getName());
@@ -83,41 +72,45 @@ public class ServerThread extends Thread {
                     // see output on server
                     System.out.println("List of available documents " + fileList);
 
-                  // download specific file
+
+                    // download specific file
                 } else if (parts[0].equals(Protocol.Client.DOWNLOAD)) {
                     String fileName = parts[1];
-                    in = new BufferedReader(new FileReader("/home/pi/myDoc/fileName"));
-                    //in = new BufferedReader(new FileReader("/home/pi/myDoc/fileName"));
-                    String fileInfo = " ";
-                    fileInfo = getNextQuote();
-                    buf = fileInfo.getBytes();
-                    InetAddress address = packet.getAddress();
-                    DatagramPacket filePacket = new DatagramPacket(buf, buf.length, address, port);
-                    socket.send(filePacket);
+                    in = new BufferedReader(new FileReader("/home/pi/myDoc/" + fileName));
+                    //in = new BufferedReader(new FileReader("/home/Documents/NedapUniversity/RaspPi" + fileName));
+
+                    byte[] fileContents = getFileContents("/home/pi/myDoc/" + fileName);
+                    //System.out.println("Filecontents" + fileContents);
+
+                    int DATASIZE = 256;
+                    boolean lastPacket = false;
 
 
+                    if (fileContents != null) {
+                        byte[][] packetArray = divideArray(fileContents, DATASIZE);
+                        for (byte[] somePacket : packetArray) {
 
+                            if (somePacket.length < DATASIZE){
+                                lastPacket = true;
+                                System.out.println("Last packet is send");
+                                InetAddress address = packet.getAddress();
+                                DatagramPacket packetLast = new DatagramPacket(somePacket, somePacket.length, address, port);
+                                socket.send(packetLast);
+
+
+                            } else {
+                                InetAddress address = packet.getAddress();
+                                DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, port);
+                                socket.send(filePacket);
+
+                            }
+
+                        }
+                    }
 
                 } else {
                     System.out.println("List not found");
                 }
-
-                //figure out response
-                String dString = null;
-                if (in == null) {
-                    dString = new Date().toString();
-
-                } else {
-                    dString = getNextQuote();
-                }
-
-                buf = dString.getBytes();
-
-                // send response to the client at " address"  and "port"
-                InetAddress address = packet.getAddress();
-                int port = packet.getPort();
-                packet = new DatagramPacket(buf, buf.length, address, port);
-                socket.send(packet);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -131,22 +124,45 @@ public class ServerThread extends Thread {
 
     }
 
-    protected String getNextQuote() {
-        String returnValue = " ";
 
-        try {
-            if ((returnValue = in.readLine()) == null) {
-                in.reset();
-                moreLines = false;
+    public static byte[] getFileContents(String fileID) {
+        //filename
+        File fileToTransmit = new File(fileID);
+        try (FileInputStream fileStream = new FileInputStream(fileToTransmit)) {
+            byte[] fileContents = new byte[(int) fileToTransmit.length()];
 
-                returnValue = "No more quotes. Goodbye.";
+            for (int i = 0; i < fileContents.length; i++) {
+                int nextByte = fileStream.read();
+                if (nextByte == -1) {
+                    throw new Exception("File size smaller than reported");
+                }
+                fileContents[i] = (byte) nextByte;
             }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-            //returnValue = "IoException occurred in the server";
+            return fileContents;
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            System.err.println(e.getStackTrace());
+            return null;
         }
-     return returnValue;
+    }
 
-}
+    public byte[][] divideArray(byte[] fileSource, int chunksize) {
+
+        //get the correct amount of chunk
+        int chunks = (fileSource.length + chunksize - 1)/chunksize;
+        System.out.println("Amount of packets to send " + chunks);
+        byte[][] arrayOfPackets = new byte[chunks][chunksize];
+
+        int start = 0;
+
+        //arrays.copyofRange --> copies specified array into new array
+        // (orignal, int from, int to)
+
+        for (int i = 0; i < arrayOfPackets.length; i++) {
+            arrayOfPackets[i] = Arrays.copyOfRange(fileSource, start, start + chunksize);
+            start = start + chunksize;
+        }
+        return arrayOfPackets;
+    }
 
 }
