@@ -16,6 +16,8 @@ public class ServerThread extends Thread {
     protected BufferedReader in = null;
     protected boolean moreLines = true;
     protected int port = 5454;
+    protected String path = "/Users/Bente.Bouwmeester/Documents/NedapUniversity/RaspPi";
+    //protected String path = "/home/pi/myDoc/";
 
 
     public ServerThread() throws IOException {
@@ -52,8 +54,8 @@ public class ServerThread extends Thread {
                 // Return list of available documents
                 if (parts[0].equals(Protocol.Client.LIST)) {
                     List<String> fileList = new ArrayList<String>();
-                    File folder = new File("/home/pi/myDoc");
-                    //File folder = new File(" /home/Documents/NedapUniversity/RaspPi");
+                    //File folder = new File("/home/pi/myDoc");
+                    File folder = new File(path);
                     File[] listOfFiles = folder.listFiles();
                     System.out.println(listOfFiles + "list of files");
                     for (File file : listOfFiles) {
@@ -76,34 +78,47 @@ public class ServerThread extends Thread {
                     // download specific file
                 } else if (parts[0].equals(Protocol.Client.DOWNLOAD)) {
                     String fileName = parts[1];
-                    in = new BufferedReader(new FileReader("/home/pi/myDoc/" + fileName));
-                    //in = new BufferedReader(new FileReader("/home/Documents/NedapUniversity/RaspPi" + fileName));
+                    //in = new BufferedReader(new FileReader("/home/pi/myDoc/" + fileName));
+                    in = new BufferedReader(new FileReader(path+ "/" + fileName));
 
-                    byte[] fileContents = getFileContents("/home/pi/myDoc/" + fileName);
+                    //byte[] fileContents = getFileContents("/home/pi/myDoc/" + fileName);
+                    byte[] fileContents = getFileContents(path+ "/" + fileName);
                     //System.out.println("Filecontents" + fileContents);
 
                     int DATASIZE = 256;
                     boolean lastPacket = false;
 
+                    int sequenceNumber = 0;
+
 
                     if (fileContents != null) {
                         byte[][] packetArray = divideArray(fileContents, DATASIZE);
                         for (byte[] somePacket : packetArray) {
+                            InetAddress address = packet.getAddress();
+                            //DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, port);
+                            DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, port);
+                            socket.send(filePacket);
+                            sequenceNumber = sequenceNumber + 1;
 
-                            if (somePacket.length < DATASIZE){
-                                lastPacket = true;
-                                System.out.println("Last packet is send");
-                                InetAddress address = packet.getAddress();
-                                DatagramPacket packetLast = new DatagramPacket(somePacket, somePacket.length, address, port);
-                                socket.send(packetLast);
+                            // all packets have fixed size
 
-
-                            } else {
-                                InetAddress address = packet.getAddress();
-                                DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, port);
-                                socket.send(filePacket);
-
-                            }
+//                            if (somePacket.length < DATASIZE){
+//                                lastPacket = true;
+//                                System.out.println("Last packet is send");
+//
+//
+//                                if (lastPacket){
+//                                    //send message to client that last packet is send
+//                                }
+//
+//
+//
+//                            } else {
+//                                InetAddress address = packet.getAddress();
+//                                DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, 4545);
+//                                socket.send(filePacket);
+//
+//                            }
 
                         }
                     }

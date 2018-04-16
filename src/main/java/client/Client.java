@@ -9,7 +9,7 @@ import java.net.*;
 public class Client extends Thread {
 
     private DatagramSocket socket = new DatagramSocket();
-    protected int port = 5454 ;
+    protected int port = 4545;
 
     public Client() throws IOException {
         socket = new DatagramSocket(port);
@@ -29,9 +29,9 @@ public class Client extends Thread {
 
                 //DatagramSocket socket = new DatagramSocket();
                 byte[] buf = new byte[256];
-                InetAddress address = InetAddress.getByName("192.168.1.1");
-                //InetAddress address = InetAddress.getByName("localhost");
-                DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, port);
+                //InetAddress address = InetAddress.getByName("192.168.1.1");
+                InetAddress address = InetAddress.getByName("localhost");
+                DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, 5454);
                 sendPacket.setData(listInput.getBytes());
                 socket.send(sendPacket);
                 System.out.println("Listinput " + listInput);
@@ -59,8 +59,9 @@ public class Client extends Thread {
                 //System.out.println("Receive packet created ");
 
                 if (receivedPacket != null) {
+                    // knip de nullen er af
                     receivedPackets = receivedPackets + 1;
-                    String received = new String(receivedPacket.getData(), 0, receivedPacket.getLength());
+                    String received = new String(receivedPacket.getData(), 0, receivedPacket.getLength()).trim();
                     System.out.println(" Received " + received);
                     System.out.println("Number of packets received  " + receivedPackets);
 
@@ -97,11 +98,6 @@ public class Client extends Thread {
 
         // receive input
         client.listen();
-
-
-
-
-
 
 
     }
