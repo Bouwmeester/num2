@@ -16,8 +16,13 @@ public class ServerThread extends Thread {
     protected BufferedReader in = null;
     protected boolean moreLines = true;
     protected int port = 5454;
+    protected int clientPort = 4545;
     protected String path = "/Users/Bente.Bouwmeester/Documents/NedapUniversity/RaspPi";
     //protected String path = "/home/pi/myDoc/";
+    private int chunks = 0;
+    static final int HEADERSIZE = 2;
+    private int DATASIZE = 256;
+    private int sequenceNumber = 0;
 
 
     public ServerThread() throws IOException {
@@ -34,17 +39,23 @@ public class ServerThread extends Thread {
 
         while (moreLines) {
             try {
-                byte[] buf = new byte[256]; //256
+                byte[] buf = new byte[DATASIZE]; //256
+
+                byte[] packetSize = new byte[buf.length + HEADERSIZE];
 
                 //receive packet
-                DatagramPacket packet = new DatagramPacket(buf, buf.length);
+                DatagramPacket packet = new DatagramPacket(packetSize, packetSize.length);
                 socket.receive(packet);
                 System.out.println("Receiving input");
 
-                // receive packet --> LIST
-                // convert byte[] buf to char
+                //input is ook DATA + HEADER
+                byte[] dataReceived = new byte[DATASIZE];
+                // -2 or just 0 ???
+                System.arraycopy(packetSize, 0, dataReceived, 0, DATASIZE);
+                //System.out.println("Data received" + dataReceived);
 
-                String msg = new String(buf, "UTF-8").trim();
+                String msg = new String(dataReceived, "UTF-8").trim();
+                //System.out.println("msg" + msg);
                 String[] parts = msg.split(" ");
                 //System.out.println(buf);
                 //System.out.println("Byte to chars '" + msg + "'");
@@ -57,7 +68,7 @@ public class ServerThread extends Thread {
                     //File folder = new File("/home/pi/myDoc");
                     File folder = new File(path);
                     File[] listOfFiles = folder.listFiles();
-                    System.out.println(listOfFiles + "list of files");
+                    //System.out.println(listOfFiles + "list of files");
                     for (File file : listOfFiles) {
                         if (file.isFile()) {
                             fileList.add(file.getName());
@@ -69,6 +80,9 @@ public class ServerThread extends Thread {
                     int port = packet.getPort();
 
                     DatagramPacket listPacket = new DatagramPacket(buf, buf.length, address, port);
+                    byte[] totalPacket = new byte[buf.length + HEADERSIZE];
+                    totalPacket[0] = (byte)1;
+                    totalPacket[1] = (byte)sequenceNumber;
                     listPacket.setData(fileList.toString().getBytes());
                     socket.send(listPacket);
                     // see output on server
@@ -85,40 +99,47 @@ public class ServerThread extends Thread {
                     byte[] fileContents = getFileContents(path+ "/" + fileName);
                     //System.out.println("Filecontents" + fileContents);
 
-                    int DATASIZE = 256;
+                    //int DATASIZE = 256;
                     boolean lastPacket = false;
 
-                    int sequenceNumber = 0;
+                    //int sequenceNumber = 0;
 
 
                     if (fileContents != null) {
                         byte[][] packetArray = divideArray(fileContents, DATASIZE);
                         for (byte[] somePacket : packetArray) {
-                            InetAddress address = packet.getAddress();
-                            //DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, port);
-                            DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, port);
-                            socket.send(filePacket);
+                            byte[] totalPacket = new byte[somePacket.length + HEADERSIZE];
+                            totalPacket[0] = (byte)0; //if last packet (byte)1   lastPacket ? (byte)1 :
+                            totalPacket[1] = (byte)sequenceNumber;
+                            //System.out.println("Header" + totalPacket[0]  + totalPacket[1]);
+                            System.arraycopy(somePacket, 0, totalPacket,HEADERSIZE,somePacket.length);
+//                            InetAddress address = packet.getAddress();
+//                            DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, port);
+//                            socket.send(filePacket);
                             sequenceNumber = sequenceNumber + 1;
 
-                            // all packets have fixed size
+                            if (sequenceNumber == chunks){
+                                System.out.println("seq num " + sequenceNumber);
+                                System.out.println("chunks " + chunks);
+                                lastPacket = true;
+                                totalPacket[0] = (byte)1;
+                                //System.out.println("Last header" + totalPacket[0]);
+                                InetAddress address = packet.getAddress();
+                                DatagramPacket filePacket = new DatagramPacket(totalPacket, totalPacket.length, address, clientPort);
+                                socket.send(filePacket);
+                                System.out.println("Last packet is sent");
 
-//                            if (somePacket.length < DATASIZE){
-//                                lastPacket = true;
-//                                System.out.println("Last packet is send");
-//
-//
-//                                if (lastPacket){
-//                                    //send message to client that last packet is send
-//                                }
-//
-//
-//
-//                            } else {
-//                                InetAddress address = packet.getAddress();
-//                                DatagramPacket filePacket = new DatagramPacket(somePacket, somePacket.length, address, 4545);
-//                                socket.send(filePacket);
-//
-//                            }
+                                if (lastPacket) {
+                                    // stop en wait for new command?
+                                }
+
+
+                            } else {
+                                InetAddress address = packet.getAddress();
+                                DatagramPacket filePacket = new DatagramPacket(totalPacket, totalPacket.length, address, clientPort);
+                                socket.send(filePacket);
+
+                            }
 
                         }
                     }
@@ -164,7 +185,7 @@ public class ServerThread extends Thread {
     public byte[][] divideArray(byte[] fileSource, int chunksize) {
 
         //get the correct amount of chunk
-        int chunks = (fileSource.length + chunksize - 1)/chunksize;
+        chunks = (fileSource.length + chunksize - 1)/chunksize;
         System.out.println("Amount of packets to send " + chunks);
         byte[][] arrayOfPackets = new byte[chunks][chunksize];
 
