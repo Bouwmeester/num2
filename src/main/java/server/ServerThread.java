@@ -36,8 +36,9 @@ public class ServerThread extends Thread {
     }
 
     public void run() {
+        boolean makeMorePackets = true;
 
-        while (moreLines) {
+        while (makeMorePackets) {
             try {
                 byte[] buf = new byte[DATASIZE]; //256
 
@@ -50,16 +51,12 @@ public class ServerThread extends Thread {
 
                 //input is ook DATA + HEADER
                 byte[] dataReceived = new byte[DATASIZE];
-                // -2 or just 0 ???
                 System.arraycopy(packetSize, 0, dataReceived, 0, DATASIZE);
                 //System.out.println("Data received" + dataReceived);
 
                 String msg = new String(dataReceived, "UTF-8").trim();
-                //System.out.println("msg" + msg);
+                System.out.println("msg" + msg);
                 String[] parts = msg.split(" ");
-                //System.out.println(buf);
-                //System.out.println("Byte to chars '" + msg + "'");
-                //System.out.println("Test '" + Protocol.Client.LIST + "'");
 
                 // Check if input message is LIST
                 // Return list of available documents
@@ -130,6 +127,7 @@ public class ServerThread extends Thread {
                                 System.out.println("Last packet is sent");
 
                                 if (lastPacket) {
+                                    // make crc
                                     // stop en wait for new command?
                                 }
 
@@ -150,8 +148,9 @@ public class ServerThread extends Thread {
 
             } catch (IOException e) {
                 e.printStackTrace();
+                makeMorePackets = false;
 
-                moreLines = false;
+
             }
 
         }
