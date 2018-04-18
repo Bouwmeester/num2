@@ -17,7 +17,7 @@ public class Packet {
         this.seqNr = seqNr;
         this.isACK = isACK;
         this.ackedPacket = ackedPacket;
-        this.data = new byte[256];
+        this.data = new byte[DATASIZE];
     }
 
     public Packet(boolean lastPacket, int seqNr, boolean isACK, int ackedPacket, byte[] data) {

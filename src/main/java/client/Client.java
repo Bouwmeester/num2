@@ -5,6 +5,7 @@ import general.Protocol;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 
 public class Client extends Thread {
@@ -48,9 +49,6 @@ public class Client extends Thread {
                     fos = new FileOutputStream(fileName, true);
                 }
 
-                //if clientInputTxt --> upload
-                // pak de goede file, packets, send
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -64,7 +62,7 @@ public class Client extends Thread {
         //receiving from server
         boolean receiving = true;
         int receivedPackets = -1;
-        int seqNrReceivedPkts = 0;
+        int expectedSeqNr = 0;
         boolean lastPacket = false;
 
         while (receiving) {
@@ -80,7 +78,6 @@ public class Client extends Thread {
                 if (receivedPacket != null) {
                     receivedPackets = receivedPackets + 1;
 
-                    //System.out.println(" Received " + received);
                     System.out.println("Number of packets received  " + receivedPackets);
 
                     byte[] header = new byte[Packet.HEADERSIZE];
@@ -97,10 +94,9 @@ public class Client extends Thread {
 
                     //send ACK
                     Packet ackPacket = new Packet(true, 0, true, receivedSeqNr);
-
                     DatagramPacket sendPacket = new DatagramPacket(ackPacket.getBytes(), Packet.SIZE, address, 5454);
                     socket.send(sendPacket);
-                    System.out.println("Packet " + seqNrReceivedPkts + " has been ACK ed " + receivedSeqNr);
+                    //System.out.println("Packet " + seqNrReceivedPkts + " has been ACK ed " + receivedSeqNr);
 
                     if (header[0] == (byte) 1) {
                         lastPacket = true;
@@ -108,8 +104,22 @@ public class Client extends Thread {
                     }
 
                     if (!fileName.isEmpty()) {
-                        writeBytesToFile(data);
-                        System.out.println("Written to file ");
+                        if (receivedSeqNr == expectedSeqNr){
+                            writeBytesToFile(data);
+                            System.out.println("Written to file ");
+
+                            System.out.println("expectedSeqNr " + expectedSeqNr);
+                            //build in sleep/wait till
+                        }
+                        ++expectedSeqNr;
+                        //doesn't work with multiple packets, save somewhere and writebytes per window?
+                        //only per 1 task
+
+//                        HashMap<Integer, byte[]>  map = new HashMap<Integer, byte[]>();
+//                        map.put(receivedSeqNr,data);
+
+                        //writeBytesToFile(data);
+                        //System.out.println("Written to file ");
                         if (lastPacket) {
                             fileName = "";
                             fos.close();
