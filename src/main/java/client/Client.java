@@ -8,10 +8,12 @@ public class Client extends Thread {
     private DatagramSocket socket = new DatagramSocket();
     protected int port = 4545;
     private static final int DATASIZE = 256;
-    private static final int HEADERSIZE = 2;
+    private static final int HEADERSIZE = 4;
     protected static String path = "/Users/Bente.Bouwmeester/Documents/NedapUniversity/RaspPi";
     //protected String path = "/home/pi/myDoc/";
-    private String fileName = "test9";
+    private String fileName = "test11"; //aanpassen
+    protected InetAddress address = InetAddress.getByName("localhost");
+    //protected InetAddress address = InetAddress.getByName("192.168.1.1");
 
     public Client() throws IOException {
         socket = new DatagramSocket(port);
@@ -27,11 +29,13 @@ public class Client extends Thread {
             try {
                 BufferedReader clientInput = new BufferedReader(new InputStreamReader(System.in));
                 String clientInputTxt = new String(clientInput.readLine());
+                //fileName
+
+                //if clientInputTxt --> upload
+                // pak de goede file, packets, send
 
                 //DatagramSocket socket = new DatagramSocket();
                 byte[] buf = new byte[HEADERSIZE + DATASIZE];
-                //InetAddress address = InetAddress.getByName("192.168.1.1");
-                InetAddress address = InetAddress.getByName("localhost");
                 DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, 5454);
                 sendPacket.setData(clientInputTxt.getBytes());
                 socket.send(sendPacket);
@@ -70,15 +74,26 @@ public class Client extends Thread {
 
                     byte[] header = new byte[HEADERSIZE];
                     byte[] data = new byte[DATASIZE];
-                    System.arraycopy(reicvPacket, 0, data, 0, DATASIZE);
+                    System.arraycopy(reicvPacket, HEADERSIZE, data, 0, DATASIZE);
                     System.arraycopy(reicvPacket, 0, header, 0, HEADERSIZE);
 
-                    String received = new String(data).trim();
-                    System.out.println("Received " + received);
+                    String received = new String(data);
+                    //System.out.println("Received " + received);
 
                     //build check based on seq numbers
                     int receivedSeqNr = data[1];
                     System.out.println("received seq nr" + receivedSeqNr);
+
+                    //send ACK
+                    byte[] buf = new byte[HEADERSIZE + DATASIZE];
+                    buf[0] = (byte)1;
+                    buf[1] = (byte) seqNrReceivedPkts;
+                    buf[2] = (byte)1; //ACK is true
+                    buf[3] = (byte) receivedSeqNr;
+                    DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, 5454);
+                    socket.send(sendPacket);
+                    System.out.println("Packet " + seqNrReceivedPkts + "has been ACK ed" + receivedSeqNr);
+
 
 
 
@@ -114,6 +129,7 @@ public class Client extends Thread {
         FileOutputStream fos = new FileOutputStream(fileName, true);
         try {
             fos.write(bytes);
+            //fos.close();
 
         } catch (IOException e) {
             e.printStackTrace();
