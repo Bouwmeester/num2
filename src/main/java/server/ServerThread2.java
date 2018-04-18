@@ -1,11 +1,11 @@
 package server;
 
+import com.nedap.university.Packet;
 import general.Protocol;
 
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,8 +39,7 @@ public class ServerThread2 extends Thread {
         //secretly receive thread
         while (true) {
             try {
-                byte[] buf = new byte[DATASIZE]; //256
-                byte[] totalPacket = new byte[buf.length + HEADERSIZE];
+                byte[] totalPacket = new byte[DATASIZE + HEADERSIZE];
 
                 //receive packet
                 DatagramPacket packet = new DatagramPacket(totalPacket, totalPacket.length);
@@ -58,10 +57,9 @@ public class ServerThread2 extends Thread {
                 System.out.println("msg" + msg);
                 String[] parts = msg.split(" ");
 
-                if (header[2] == (byte) 1) {
+                if (send != null && header[2] == (byte)1) {
                     //ACK received
                     send.setACK();
-
 
                 } else if (parts[0].equals(Protocol.Client.LIST)) {
                     List<String> fileList = new ArrayList<String>();
@@ -73,19 +71,25 @@ public class ServerThread2 extends Thread {
                             fileList.add(file.getName());
                         }
                     }
+                    Packet listPacket = new Packet(true, 0, false, 0, fileList.toString().getBytes());
+                    byte[] bytes = listPacket.getBytes();
+
+                    DatagramPacket filePacket = new DatagramPacket(bytes, bytes.length, packet.getAddress(), packet.getPort());
+                    socket.send(filePacket);
+
                 } else if (parts[0].equals(Protocol.Client.DOWNLOAD)) {
                     String fileName = parts[1];
                     send = new Send(fileName, packet.getAddress(), 4545, socket);
                     send.start();
                     //System.out.println("Filecontents" + fileContents);
-                } else if (parts[0].equals(Protocol.Client.UPLOAD)){
-                    String fileName = parts[1];
-                    //instead of sending a file --> receive
-                    byte[] uploaded = new byte[HEADERSIZE + DATASIZE];
-
-                    DatagramPacket uploadPacket = new DatagramPacket(uploaded, uploaded.length);
-                    socket.receive(uploadPacket);
-                    // make client send packets
+//                } else if (parts[0].equals(Protocol.Client.UPLOAD)){
+//                    String fileName = parts[1];
+//                    //instead of sending a file --> receive
+//                    byte[] uploaded = new byte[HEADERSIZE + DATASIZE];
+//
+//                    DatagramPacket uploadPacket = new DatagramPacket(uploaded, uploaded.length);
+//                    socket.receive(uploadPacket);
+//                    // make client send packets
 
 
                 } else {

@@ -1,5 +1,7 @@
 package server;
 
+import com.nedap.university.Packet;
+
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -11,12 +13,9 @@ public class Send extends Thread {
 
 
     protected BufferedReader in = null;
-    protected int port = 5454;
     protected String path = "/Users/Bente.Bouwmeester/Documents/NedapUniversity/RaspPi";
     //protected String path = "/home/pi/myDoc/";
     private int chunks = 0;
-    static final int HEADERSIZE = 4;
-    private int DATASIZE = 256;
     private byte[] fileContents = null;
     boolean ACK = false;
     private String fileName;
@@ -34,47 +33,39 @@ public class Send extends Thread {
     public void run() {
         boolean lastPacket = false;
         int sequenceNumber = -1;
+
         try {
             in = new BufferedReader(new FileReader(path + "/" + fileName));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
         fileContents = getFileContents(path + "/" + fileName);
+
+
         while (!lastPacket) {
             try {
-                byte[][] packetArray = divideArray(fileContents, DATASIZE);
+                byte[][] packetArray = divideArray(fileContents, Packet.DATASIZE);
 
                 //array welke je nog moet sturen --> Ack --> uit de lijst
                 // lijst met byte array s
 
                 for (byte[] somePacket : packetArray) {
+                    Packet partyPacket = new Packet(false, ++sequenceNumber, false, 0, somePacket);
 
-                    byte[] totalPacket = new byte[somePacket.length + HEADERSIZE];
-                    totalPacket[0] = (byte) 0; //if last packet (byte)1
-                    totalPacket[1] = (byte) ++sequenceNumber;
-                    totalPacket[2] = (byte) 0;      //is it ACK ed
-                    totalPacket[3] = (byte) 0;      // which ACK
-                    //System.out.println("Header" + totalPacket[0]  + totalPacket[1]);
-                    System.arraycopy(somePacket, 0, totalPacket, HEADERSIZE, somePacket.length);
                     if (sequenceNumber + 1 == chunks) {
-                        //System.out.println("seq num " + sequenceNumber);
-                        //System.out.println("chunks " + chunks);
+                        partyPacket.setLastPacket(true);
                         lastPacket = true;
-                        totalPacket[0] = (byte) 1;
-                        //System.out.println("Last header" + totalPacket[0]);
-                        DatagramPacket filePacket = new DatagramPacket(totalPacket, totalPacket.length, address, clientPort) ;
-                        socket.send(filePacket);
-                        System.out.println("Last packet is sent");
-                    } else {
-                        DatagramPacket filePacket = new DatagramPacket(totalPacket, totalPacket.length, address, clientPort);
-                        socket.send(filePacket);
-
+                        System.out.println("Last packet is to be sent");
                     }
+                    byte[] bytes = partyPacket.getBytes();
+
+                    DatagramPacket filePacket = new DatagramPacket(bytes, bytes.length, address, clientPort);
+                    socket.send(filePacket);
 
                     while(!ACK) {
                         //geen ACK binnen < 10 s --> nog een keer sturen
                         try {
-                            currentThread().sleep(10);
+                            currentThread().sleep(100);
                         } catch (InterruptedException e){
                             e.printStackTrace();
                         }
@@ -136,5 +127,6 @@ public class Send extends Thread {
             return null;
         }
     }
+
 
 }
