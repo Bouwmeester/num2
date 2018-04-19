@@ -33,6 +33,7 @@ public class Send extends Thread {
     public void run() {
         boolean lastPacket = false;
         int sequenceNumber = -1;
+        long startTime = System.currentTimeMillis();
 
         try {
             in = new BufferedReader(new FileReader(path + "/" + fileName));
