@@ -2,6 +2,7 @@ package client;
 
 import com.nedap.university.Packet;
 import general.Protocol;
+import server.Send;
 
 import java.io.*;
 import java.net.*;
@@ -20,7 +21,7 @@ public class Client extends Thread {
     private FileOutputStream fos;
 
     public Client() throws IOException {
-        socket = new DatagramSocket(port);
+        socket = new DatagramSocket(port); //port= 4545
     }
 
 
@@ -47,6 +48,11 @@ public class Client extends Thread {
                     fileName = parts[1];
                     System.out.println("fileName " + fileName);
                     fos = new FileOutputStream(fileName, true);
+                } else if (parts[0].equals(Protocol.Client.UPLOAD)){
+                    fileName = parts[1];
+                    Send send = new Send(fileName, address, 5454, socket);
+                    send.start();
+
                 }
 
             } catch (IOException e) {
@@ -148,6 +154,8 @@ public class Client extends Thread {
         fos.write(bytes);
         fos.flush();
     }
+
+
 
 
     public static void main(String[] args) throws IOException {
