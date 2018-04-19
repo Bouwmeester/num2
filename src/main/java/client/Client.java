@@ -19,6 +19,7 @@ public class Client extends Thread {
     protected InetAddress address = InetAddress.getByName("localhost");
     //protected InetAddress address = InetAddress.getByName("192.168.1.1");
     private FileOutputStream fos;
+    Send send  = null;
 
     public Client() throws IOException {
         socket = new DatagramSocket(port); //port= 4545
@@ -49,8 +50,8 @@ public class Client extends Thread {
                     System.out.println("fileName " + fileName);
                     fos = new FileOutputStream(fileName, true);
                 } else if (parts[0].equals(Protocol.Client.UPLOAD)){
-                    fileName = parts[1];
-                    Send send = new Send(fileName, address, 5454, socket);
+                    String uploadFileName = parts[1];
+                    send = new Send(uploadFileName, address, 5454, socket);
                     send.start();
 
                 }
@@ -104,6 +105,10 @@ public class Client extends Thread {
                     socket.send(sendPacket);
                     //System.out.println("Packet " + seqNrReceivedPkts + " has been ACK ed " + receivedSeqNr);
 
+                    if (header[2] == (byte)1){
+                        send.setACK();
+                    }
+
                     if (header[0] == (byte) 1) {
                         lastPacket = true;
                         System.out.println("Last packet received");
@@ -116,6 +121,8 @@ public class Client extends Thread {
 
                             System.out.println("expectedSeqNr " + expectedSeqNr);
                             //build in sleep/wait till
+
+
                         }
                         ++expectedSeqNr;
                         //doesn't work with multiple packets, save somewhere and writebytes per window?
@@ -127,7 +134,7 @@ public class Client extends Thread {
                         //writeBytesToFile(data);
                         //System.out.println("Written to file ");
                         if (lastPacket) {
-                            fileName = "";
+                            fileName = null;
                             fos.close();
                         }
                     }
