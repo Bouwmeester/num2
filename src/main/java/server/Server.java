@@ -94,19 +94,3 @@ public class Server extends Thread {
 
 
 
-
-
-
-////                } else if (parts[0].equals(Protocol.Client.UPLOAD)){
-////                    String fileName = parts[1];
-////                    //instead of sending a file --> receive
-////                    byte[] uploaded = new byte[HEADERSIZE + DATASIZE];
-////
-////                    DatagramPacket uploadPacket = new DatagramPacket(uploaded, uploaded.length);
-////                    socket.receive(uploadPacket);
-////                    // make client send packets
-//
-//                } else {
-//                    System.out.println("List not found");
-//                    //is also printed after incoming ACK
-//                }

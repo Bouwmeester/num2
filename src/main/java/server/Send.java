@@ -54,6 +54,9 @@ public class Send extends Thread {
                     if (sequenceNumber + 1 == chunks) {
                         partyPacket.setLastPacket(true);
                         lastPacket = true;
+                        long endTime = System.currentTimeMillis();
+                        long duration = endTime - startTime;
+                        System.out.println("Duration "+  duration/1000);
                         System.out.println("Last packet is to be sent");
                     }
                     byte[] bytes = partyPacket.getBytes();
