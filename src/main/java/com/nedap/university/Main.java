@@ -1,9 +1,6 @@
 package com.nedap.university;
 
-
 import server.Server;
-import server.ServerThread;
-import server.ServerThread2;
 
 import java.io.IOException;
 
@@ -26,7 +23,7 @@ public class Main {
 
         try {
             // do useful stuff
-            ServerThread2 server = new ServerThread2();
+            Server server = new Server();
             server.start();
             System.out.println("Server is started");
 

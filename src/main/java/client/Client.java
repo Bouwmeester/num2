@@ -7,22 +7,21 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-
 public class Client extends Thread {
 
     private DatagramSocket socket = new DatagramSocket();
-    protected int port = 4545;
-    protected static String path = "/Users/Bente.Bouwmeester/Documents/NedapUniversity/RaspPi";
-    //protected String path = "/home/pi/myDoc/";
-    private String fileName = ""; //aanpassen
-    protected InetAddress address = InetAddress.getByName("localhost");
-    //protected InetAddress address = InetAddress.getByName("192.168.1.1");
+    private String downloadLocation;
+    private String fileName = "";
+    private InetAddress address;
+    private int remotePort;
     private FileOutputStream fos;
 
-    public Client() throws IOException {
-        socket = new DatagramSocket(port);
+    public Client(String host, int remotePort, String downloadLocation) throws IOException {
+        socket = new DatagramSocket(37642);
+        address = InetAddress.getByName(host);
+        this.remotePort = remotePort;
+        this.downloadLocation = downloadLocation;
     }
-
 
     public void run() {
         boolean sending = true;
@@ -31,15 +30,13 @@ public class Client extends Thread {
             //sending to server
             System.out.println("Please enter LIST, to get a list of documents and DOWNLOAD (documentname.txt) to Download ");
             try {
-                BufferedReader clientInput = new BufferedReader(new InputStreamReader(System.in));
-                String clientInputTxt = new String(clientInput.readLine());
+                String clientInputTxt = readFromInput("Enter command");
 
-                //DatagramSocket socket = new DatagramSocket();
-                byte[] buf = new byte[Packet.HEADERSIZE + Packet.DATASIZE];
-                DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, address, 5454);
-                sendPacket.setData(clientInputTxt.getBytes());
+                Packet pakketjeToSend = new Packet(true, 0, false, 0, clientInputTxt.getBytes());
+
+                byte[] bytesToSend = pakketjeToSend.getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(bytesToSend, bytesToSend.length, address, remotePort);
                 socket.send(sendPacket);
-                System.out.println("clientInput " + clientInputTxt);
 
                 //fileName
                 String[] parts = clientInputTxt.split(" ");
@@ -48,64 +45,52 @@ public class Client extends Thread {
                     System.out.println("fileName " + fileName);
                     fos = new FileOutputStream(fileName, true);
                 }
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
         }
-
-
     }
 
     public void listen() {
         //receiving from server
         boolean receiving = true;
-        int receivedPackets = -1;
+        int receivedPackets = 0;
         int expectedSeqNr = 0;
         boolean lastPacket = false;
 
         while (receiving) {
             System.out.println("Receiving... , give command LIST or DOWNLOAD");
             try {
-                //DatagramSocket socket = new DatagramSocket();
-                byte[] reicvPacket = new byte[Packet.HEADERSIZE + Packet.DATASIZE];
-
-                DatagramPacket receivedPacket = new DatagramPacket(reicvPacket, reicvPacket.length);
+                byte[] receivedBytes = new byte[Packet.SIZE];
+                DatagramPacket receivedPacket = new DatagramPacket(receivedBytes, receivedBytes.length);
                 socket.receive(receivedPacket);
                 //System.out.println("Receive packet created ");
 
                 if (receivedPacket != null) {
                     receivedPackets = receivedPackets + 1;
-
                     System.out.println("Number of packets received  " + receivedPackets);
 
-                    byte[] header = new byte[Packet.HEADERSIZE];
-                    byte[] data = new byte[Packet.DATASIZE];
-                    System.arraycopy(reicvPacket, Packet.HEADERSIZE, data, 0, Packet.DATASIZE);
-                    System.arraycopy(reicvPacket, 0, header, 0, Packet.HEADERSIZE);
-
-                    String received = new String(data);
-                    System.out.println("Received " + received);
+                    Packet receivedPakketje = new Packet(receivedBytes);
+                    System.out.println("Received " + new String(receivedPakketje.getData()).trim());
 
                     //build check based on seq numbers
-                    int receivedSeqNr = header[1];
+                    int receivedSeqNr = receivedPakketje.getSeqNr();
                     System.out.println("received seq nr" + receivedSeqNr);
 
                     //send ACK
                     Packet ackPacket = new Packet(true, 0, true, receivedSeqNr);
-                    DatagramPacket sendPacket = new DatagramPacket(ackPacket.getBytes(), Packet.SIZE, address, 5454);
+                    DatagramPacket sendPacket = new DatagramPacket(ackPacket.getBytes(), Packet.SIZE, address, remotePort);
                     socket.send(sendPacket);
-                    //System.out.println("Packet " + seqNrReceivedPkts + " has been ACK ed " + receivedSeqNr);
 
-                    if (header[0] == (byte) 1) {
+                    if (receivedPakketje.isLastPacket()) {
                         lastPacket = true;
+                        receivedPackets = 0;
                         System.out.println("Last packet received");
                     }
 
                     if (!fileName.isEmpty()) {
                         if (receivedSeqNr == expectedSeqNr){
-                            writeBytesToFile(data);
+                            writeBytesToFile(receivedPakketje.getData());
                             System.out.println("Written to file ");
 
                             System.out.println("expectedSeqNr " + expectedSeqNr);
@@ -144,25 +129,29 @@ public class Client extends Thread {
         }
     }
 
-    public void writeBytesToFile(byte[] bytes) throws IOException {
+    private void writeBytesToFile(byte[] bytes) throws IOException {
         fos.write(bytes);
         fos.flush();
     }
 
-
     public static void main(String[] args) throws IOException {
-        //          2 threads
+        String host = readFromInput("Enter host: ");
+        String portAsString = readFromInput("Enter port to connect to: ");
 
-        Client client = new Client();
-        //runs run method, sending
-        client.start();
+        int port = Integer.parseInt(portAsString);
 
-        // receive input
-        client.listen();
+        String downloadLocation = "~/Downloads/";
+        Client client = new Client(host, port, downloadLocation);
 
-
+        client.start(); // start thread, be able to send stuff
+        client.listen(); // listen for answers
     }
 
+    private static String readFromInput(String requestion) throws IOException {
+        System.out.println(requestion);
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        return br.readLine();
+    }
 
 }
 
