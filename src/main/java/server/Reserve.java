@@ -17,7 +17,7 @@ import java.util.List;
 
 public class Reserve {
 
-//    public class ServerThread extends Thread {
+//    public class Server extends Thread {
 //
 //        protected DatagramSocket socket = null;
 //        protected BufferedReader in = null;
@@ -25,12 +25,12 @@ public class Reserve {
 //        protected int port = 5454;
 //
 //
-//        public ServerThread() throws IOException {
-//            this("ServerThread");
+//        public Server() throws IOException {
+//            this("Server");
 //
 //        }
 //
-//        public ServerThread(String name) throws IOException {
+//        public Server(String name) throws IOException {
 //            super(name);
 //            socket = new DatagramSocket(port);
 //        }

@@ -12,6 +12,16 @@ public class Packet {
     private int ackedPacket;
     private byte[] data;
 
+    public Packet(byte[] receivedData) {
+        lastPacket = receivedData[0] == (byte)1;
+        seqNr = receivedData[1];
+        isACK = receivedData[2] == (byte)1;
+        ackedPacket = receivedData[3];
+
+        data = new byte[DATASIZE];
+        System.arraycopy(receivedData, HEADERSIZE, data, 0, DATASIZE);
+    }
+
     public Packet(boolean lastPacket, int seqNr, boolean isACK, int ackedPacket) {
         this.lastPacket = lastPacket;
         this.seqNr = seqNr;
@@ -40,6 +50,22 @@ public class Packet {
 
     public void setLastPacket(boolean lastPacket) {
         this.lastPacket = lastPacket;
+    }
+
+    public boolean isLastPacket() {
+        return this.lastPacket;
+    }
+
+    public int getSeqNr() {
+        return this.seqNr;
+    }
+
+    public boolean isACK() {
+        return isACK;
+    }
+
+    public byte[] getData() {
+        return data;
     }
 
 }

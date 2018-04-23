@@ -13,18 +13,16 @@ public class Send extends Thread {
 
 
     protected BufferedReader in = null;
-    protected String path = "/Users/Bente.Bouwmeester/Documents/NedapUniversity/RaspPi";
-    //protected String path = "/home/pi/myDoc/";
     private int chunks = 0;
     private byte[] fileContents = null;
     boolean ACK = false;
-    private String fileName;
+    private String filePath;
     private InetAddress address;
     private int clientPort;
     private DatagramSocket socket;
 
-    public Send(String fileName, InetAddress address, int clientPort, DatagramSocket socket) {
-        this.fileName = fileName;
+    public Send(String filePath, InetAddress address, int clientPort, DatagramSocket socket) {
+        this.filePath = filePath;
         this.address=address;
         this.clientPort = clientPort;
         this.socket = socket;
@@ -36,11 +34,11 @@ public class Send extends Thread {
         long startTime = System.currentTimeMillis();
 
         try {
-            in = new BufferedReader(new FileReader(path + "/" + fileName));
+            in = new BufferedReader(new FileReader(filePath));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        fileContents = getFileContents(path + "/" + fileName);
+        fileContents = getFileContents(filePath);
 
 
         while (!lastPacket) {
