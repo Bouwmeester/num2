@@ -23,7 +23,7 @@ public class Send extends Thread {
 
     public Send(String filePath, InetAddress address, int clientPort, DatagramSocket socket) {
         this.filePath = filePath;
-        this.address=address;
+        this.address = address;
         this.clientPort = clientPort;
         this.socket = socket;
     }
@@ -31,7 +31,6 @@ public class Send extends Thread {
     public void run() {
         boolean lastPacket = false;
         int sequenceNumber = -1;
-        long startTime = System.currentTimeMillis();
 
         try {
             in = new BufferedReader(new FileReader(filePath));
@@ -45,35 +44,27 @@ public class Send extends Thread {
             try {
                 byte[][] packetArray = divideArray(fileContents, Packet.DATASIZE);
 
-                //array welke je nog moet sturen --> Ack --> uit de lijst
-                // lijst met byte array s
-
                 for (byte[] somePacket : packetArray) {
                     Packet partyPacket = new Packet(false, ++sequenceNumber, false, 0, somePacket);
 
                     if (sequenceNumber + 1 == chunks) {
                         partyPacket.setLastPacket(true);
                         lastPacket = true;
-                        long endTime = System.currentTimeMillis();
-                        long duration = endTime - startTime;
-                        System.out.println("Duration "+  duration/1000);
-                        System.out.println("Last packet is to be sent");
                     }
                     byte[] bytes = partyPacket.getBytes();
 
                     DatagramPacket filePacket = new DatagramPacket(bytes, bytes.length, address, clientPort);
-                    socket.send(filePacket);
-
-                    while(!ACK) {
-                        //geen ACK binnen < 10 s --> nog een keer sturen
-                        try {
-                            currentThread().sleep(100);
-                        } catch (InterruptedException e){
-                            e.printStackTrace();
-                        }
-
-                    }
                     ACK = false;
+
+                    while(!ACK){
+                        socket.send(filePacket);
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException e) {
+                            System.out.println("Interrupted");
+                        }
+                    }
+
 
                 }
             } catch (IOException e) {
@@ -82,12 +73,10 @@ public class Send extends Thread {
         }
     }
 
-    public void setACK(){
+    public void setACK(int sequenceNumber){
         ACK = true;
+        interrupt();
     }
-
-
-
 
     public byte[][] divideArray(byte[] fileSource, int chunkSize) {
 

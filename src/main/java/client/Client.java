@@ -16,8 +16,10 @@ public class Client extends Thread {
     private int remotePort;
     private FileOutputStream fos;
 
+
+
     public Client(String host, int remotePort, String downloadLocation) throws IOException {
-        socket = new DatagramSocket(37642);
+//        socket = new DatagramSocket(37642);
         address = InetAddress.getByName(host);
         this.remotePort = remotePort;
         this.downloadLocation = downloadLocation;
@@ -113,6 +115,7 @@ public class Client extends Thread {
                 } else {
                     try {
                         Thread.sleep(10);
+                        //retransmissions van specific packet
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         receiving = false;
@@ -135,10 +138,14 @@ public class Client extends Thread {
     }
 
     public static void main(String[] args) throws IOException {
-        String host = readFromInput("Enter host: ");
-        String portAsString = readFromInput("Enter port to connect to: ");
+        //String host = readFromInput("Enter host: ");
+        //String portAsString = readFromInput("Enter port to connect to: ");
+
+        String host = "127.0.0.1";
+        String portAsString = "5454";
 
         int port = Integer.parseInt(portAsString);
+
 
         String downloadLocation = "~/Downloads/";
         Client client = new Client(host, port, downloadLocation);

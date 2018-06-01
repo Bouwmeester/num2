@@ -24,7 +24,8 @@ public class Server extends Thread {
         if (new File("/home/pi/myDoc").exists()) {
             path = "/home/pi/myDoc";
         } else {
-            path = "/Users/mark.oudeveldhuis/Downloads/_kleinmapje/";
+            path = "/Users/Bente.Bouwmeester/Downloads/num2";
+                    //"/Users/mark.oudeveldhuis/Downloads/_kleinmapje/";
         }
     }
 
@@ -46,7 +47,7 @@ public class Server extends Thread {
                 String[] parts = msg.split(" ");
 
                 if (send != null && onsPakketje.isACK()) {
-                    send.setACK();
+                    send.setACK(onsPakketje.getSeqNr());
                 } else {
                     Packet responsePacket = null;
 
