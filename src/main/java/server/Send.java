@@ -20,6 +20,7 @@ public class Send extends Thread {
     private InetAddress address;
     private int clientPort;
     private DatagramSocket socket;
+    private int windowSize = Window.WINDOWSIZE;
 
     public Send(String filePath, InetAddress address, int clientPort, DatagramSocket socket) {
         this.filePath = filePath;
@@ -44,31 +45,26 @@ public class Send extends Thread {
             try {
                 byte[][] packetArray = divideArray(fileContents, Packet.DATASIZE);
 
-                for (byte[] somePacket : packetArray) {
-                    Packet partyPacket = new Packet(false, ++sequenceNumber, false, 0, somePacket);
 
-                    if (sequenceNumber + 1 == chunks) {
-                        partyPacket.setLastPacket(true);
-                        lastPacket = true;
-                    }
-                    byte[] bytes = partyPacket.getBytes();
-
-                    DatagramPacket filePacket = new DatagramPacket(bytes, bytes.length, address, clientPort);
-                    ACK = false;
-
-                    while(!ACK){
-                        socket.send(filePacket);
+                int windowAmount = (packetArray.length + windowSize - 1)/windowSize;
+                for (int i = 0; i < windowAmount; i++){
+                    byte [][] packetsForWindow = Arrays.copyOfRange(packetArray,i * windowSize,(i * windowSize) + windowSize - 1);
+                    Window window = new Window(this, packetsForWindow);
+                    window.start();
+                    while(!window.isDone()){
                         try {
-                            Thread.sleep(5000);
+                            Thread.sleep(50);
                         } catch (InterruptedException e) {
-                            System.out.println("Interrupted");
+
                         }
                     }
 
 
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+
+
+
+
             }
         }
     }
@@ -79,11 +75,10 @@ public class Send extends Thread {
     }
 
     public byte[][] divideArray(byte[] fileSource, int chunkSize) {
-
-
         //get the correct amount of chunk
         chunks = (fileSource.length + chunkSize - 1) / chunkSize;
         System.out.println("Amount of packets to send " + chunks);
+
         byte[][] arrayOfPackets = new byte[chunks][chunkSize];
 
         int start = 0;
@@ -117,6 +112,17 @@ public class Send extends Thread {
             System.err.println(e.getStackTrace());
             return null;
         }
+    }
+
+    public void sendPacket(Packet packetToSend){
+        byte[] bytes = packetToSend.getBytes();
+        DatagramPacket filePacket = new DatagramPacket(bytes, bytes.length, address, clientPort);
+        try {
+            socket.send(filePacket);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 
